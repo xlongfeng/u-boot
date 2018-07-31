@@ -1523,7 +1523,7 @@ tpl/u-boot-tpl.bin: tools prepare \
 		$(if $(CONFIG_OF_SEPARATE)$(CONFIG_OF_EMBED)$(CONFIG_SPL_OF_PLATDATA),dts/dt.dtb)
 	$(Q)$(MAKE) obj=tpl -f $(srctree)/scripts/Makefile.spl all
 
-TAG_SUBDIRS := $(patsubst %,$(srctree)/%,$(u-boot-dirs) include)
+TAG_SUBDIRS := $(patsubst %,$(srctree)/%,$(u-boot-dirs) include arch/$(ARCH)/include)
 
 FIND := find
 FINDFLAGS := -L
@@ -1538,7 +1538,8 @@ etags:
 						-name '*.[chS]' -print`
 cscope:
 		$(FIND) $(FINDFLAGS) $(TAG_SUBDIRS) -name '*.[chS]' -print > \
-						cscope.files
+						cscope.duplex
+		sort -k 2n cscope.duplex | uniq > cscope.files
 		cscope -b -q -k
 
 SYSTEM_MAP = \

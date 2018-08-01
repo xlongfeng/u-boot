@@ -68,7 +68,7 @@ DECLARE_GLOBAL_DATA_PTR;
 	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm | PAD_CTL_HYS |	\
 	PAD_CTL_ODE | PAD_CTL_SRE_FAST)
 
-#define I2C_PMIC	1
+#define I2C_PMIC	2
 
 #define I2C_PAD MUX_PAD_CTRL(I2C_PAD_CTRL)
 
@@ -82,11 +82,24 @@ int dram_init(void)
 	return 0;
 }
 
+#define VDD5V_SW_CPU		IMX_GPIO_NR(2, 1)
+#define VMAIN_IN_SW_CPU		IMX_GPIO_NR(2, 2)
+
+#define POWER_STATE_LED		IMX_GPIO_NR(3, 3)
+
+#define ALARM_BLUE_LED		IMX_GPIO_NR(3, 6)
+#define ALARM_RED_LED		IMX_GPIO_NR(3, 7)
+#define ALARM_YELLOW_LED	IMX_GPIO_NR(3, 8)
+
 static iomux_v3_cfg_t const misc_pads[] = {
 	IOMUX_PADS(PAD_GPIO_9__WDOG1_B | MUX_PAD_CTRL(WEAK_PULLUP)),
 	IOMUX_PADS(PAD_SD1_DAT3__WDOG2_B | MUX_PAD_CTRL(WEAK_PULLUP)),
 	IOMUX_PADS(PAD_NANDF_D1__GPIO2_IO01 | MUX_PAD_CTRL(WEAK_PULLUP_OUTPUT)),
 	IOMUX_PADS(PAD_NANDF_D2__GPIO2_IO02 | MUX_PAD_CTRL(WEAK_PULLUP_OUTPUT)),
+	IOMUX_PADS(PAD_EIM_DA3__GPIO3_IO03 | MUX_PAD_CTRL(WEAK_PULLUP_OUTPUT)),
+	IOMUX_PADS(PAD_EIM_DA6__GPIO3_IO06 | MUX_PAD_CTRL(WEAK_PULLUP_OUTPUT)),
+	IOMUX_PADS(PAD_EIM_DA7__GPIO3_IO07 | MUX_PAD_CTRL(WEAK_PULLUP_OUTPUT)),
+	IOMUX_PADS(PAD_EIM_DA8__GPIO3_IO08 | MUX_PAD_CTRL(WEAK_PULLUP_OUTPUT)),
 };
 
 static iomux_v3_cfg_t const uart1_pads[] = {
@@ -232,14 +245,14 @@ static struct i2c_pads_info mx6q_i2c_pad_info1 = {
 
 static struct i2c_pads_info mx6dl_i2c_pad_info1 = {
 	.scl = {
-		.i2c_mode = MX6DL_PAD_KEY_COL3__I2C2_SCL | I2C_PAD,
-		.gpio_mode = MX6DL_PAD_KEY_COL3__GPIO4_IO12 | I2C_PAD,
-		.gp = IMX_GPIO_NR(4, 12)
+		.i2c_mode = MX6DL_PAD_GPIO_5__I2C3_SCL | I2C_PAD,
+		.gpio_mode = MX6DL_PAD_GPIO_5__GPIO1_IO05 | I2C_PAD,
+		.gp = IMX_GPIO_NR(1, 5)
 	},
 	.sda = {
-		.i2c_mode = MX6DL_PAD_KEY_ROW3__I2C2_SDA | I2C_PAD,
-		.gpio_mode = MX6DL_PAD_KEY_ROW3__GPIO4_IO13 | I2C_PAD,
-		.gp = IMX_GPIO_NR(4, 13)
+		.i2c_mode = MX6DL_PAD_GPIO_6__I2C3_SDA | I2C_PAD,
+		.gpio_mode = MX6DL_PAD_GPIO_6__GPIO1_IO06 | I2C_PAD,
+		.gp = IMX_GPIO_NR(1, 6)
 	}
 };
 
@@ -266,7 +279,6 @@ iomux_v3_cfg_t const di0_pads[] = {
 
 static void setup_iomux_misc(void)
 {
-
 	SETUP_IOMUX_PADS(misc_pads);
 }
 
@@ -656,7 +668,7 @@ int board_init(void)
 	if (is_mx6dq() || is_mx6dqp())
 		setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6q_i2c_pad_info1);
 	else
-		setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6dl_i2c_pad_info1);
+		setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6dl_i2c_pad_info1);
 #if defined(CONFIG_VIDEO_IPUV3)
 	setup_display();
 #endif
@@ -669,29 +681,9 @@ int board_init(void)
 
 int power_init_board(void)
 {
-	struct pmic *p;
-	unsigned int reg;
-	int ret;
-
-	p = pfuze_common_init(I2C_PMIC);
-	if (!p)
-		return -ENODEV;
-
-	ret = pfuze_mode_init(p, APS_PFM);
-	if (ret < 0)
-		return ret;
-
-	/* Increase VGEN3 from 2.5 to 2.8V */
-	pmic_reg_read(p, PFUZE100_VGEN3VOL, &reg);
-	reg &= ~LDO_VOL_MASK;
-	reg |= LDOB_2_80V;
-	pmic_reg_write(p, PFUZE100_VGEN3VOL, reg);
-
-	/* Increase VGEN5 from 2.8 to 3V */
-	pmic_reg_read(p, PFUZE100_VGEN5VOL, &reg);
-	reg &= ~LDO_VOL_MASK;
-	reg |= LDOB_3_00V;
-	pmic_reg_write(p, PFUZE100_VGEN5VOL, reg);
+	gpio_direction_output(VDD5V_SW_CPU, 1);
+	gpio_direction_output(VMAIN_IN_SW_CPU, 1);
+	gpio_direction_output(POWER_STATE_LED, 1);
 
 	return 0;
 }

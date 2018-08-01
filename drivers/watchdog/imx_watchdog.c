@@ -39,14 +39,21 @@ void hw_watchdog_init(void)
 }
 #endif
 
-void __attribute__((weak)) reset_cpu(ulong addr)
+void hw_watchdog_reset_pmic(ulong addr)
 {
-	struct watchdog_regs *wdog = (struct watchdog_regs *)WDOG1_BASE_ADDR;
+	struct watchdog_regs *wdog = (struct watchdog_regs *)addr;
 
-	clrsetbits_le16(&wdog->wcr, WCR_WT_MSK, WCR_WDE);
+	clrsetbits_le16(&wdog->wcr, WCR_WT_MSK, WCR_SRS | WCR_WDT | WCR_WDE);
 
 	writew(0x5555, &wdog->wsr);
 	writew(0xaaaa, &wdog->wsr);	/* load minimum 1/2 second timeout */
+}
+
+void __attribute__((weak)) reset_cpu(ulong addr)
+{
+	hw_watchdog_reset_pmic(WDOG1_BASE_ADDR);
+	hw_watchdog_reset_pmic(WDOG2_BASE_ADDR);
+
 	while (1) {
 		/*
 		 * spin for .5 seconds before reset

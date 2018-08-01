@@ -23,11 +23,17 @@
 #define CONFIG_FEC_MXC
 #define CONFIG_MII
 #define IMX_FEC_BASE			ENET_BASE_ADDR
-#define CONFIG_FEC_XCV_TYPE		RGMII
 #define CONFIG_ETHPRIME			"FEC"
-#define CONFIG_FEC_MXC_PHYADDR		1
 
-#define CONFIG_PHY_ATHEROS
+#ifdef CONFIG_PHY_ATHEROS
+#define CONFIG_FEC_XCV_TYPE		RGMII
+#define CONFIG_FEC_MXC_PHYADDR		1
+#endif
+
+#ifdef CONFIG_PHY_SMSC
+#define CONFIG_FEC_XCV_TYPE		RMII
+#define CONFIG_FEC_MXC_PHYADDR		0
+#endif
 
 #ifdef CONFIG_CMD_SF
 #define CONFIG_SF_DEFAULT_BUS		0
@@ -62,6 +68,7 @@
 	"fdt_file=undefined\0" \
 	"fdt_addr=0x18000000\0" \
 	"boot_fdt=try\0" \
+	"ethaddr=00:e0:0c:bc:e5:60\0" \
 	"ip_dyn=yes\0" \
 	"console=" CONSOLE_DEV "\0" \
 	"dfuspi=dfu 0 sf 0:0:10000000:0\0" \

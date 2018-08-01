@@ -34,6 +34,22 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#define WEAK_PULLDN	(PAD_CTL_PUS_100K_DOWN |		\
+	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm |			\
+	PAD_CTL_HYS | PAD_CTL_SRE_SLOW)
+
+#define WEAK_PULLDN_OUTPUT (PAD_CTL_PUS_100K_DOWN |		\
+	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm |			\
+	PAD_CTL_SRE_SLOW)
+
+#define WEAK_PULLUP	(PAD_CTL_PUS_100K_UP |			\
+	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm |			\
+	PAD_CTL_HYS | PAD_CTL_SRE_SLOW)
+
+#define WEAK_PULLUP_OUTPUT (PAD_CTL_PUS_100K_UP |		\
+	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm |			\
+	PAD_CTL_SRE_SLOW)
+
 #define UART_PAD_CTRL  (PAD_CTL_PUS_100K_UP |			\
 	PAD_CTL_SPEED_MED | PAD_CTL_DSE_40ohm |			\
 	PAD_CTL_SRE_FAST  | PAD_CTL_HYS)
@@ -66,9 +82,16 @@ int dram_init(void)
 	return 0;
 }
 
+static iomux_v3_cfg_t const misc_pads[] = {
+	IOMUX_PADS(PAD_GPIO_9__WDOG1_B | MUX_PAD_CTRL(WEAK_PULLUP)),
+	IOMUX_PADS(PAD_SD1_DAT3__WDOG2_B | MUX_PAD_CTRL(WEAK_PULLUP)),
+	IOMUX_PADS(PAD_NANDF_D1__GPIO2_IO01 | MUX_PAD_CTRL(WEAK_PULLUP_OUTPUT)),
+	IOMUX_PADS(PAD_NANDF_D2__GPIO2_IO02 | MUX_PAD_CTRL(WEAK_PULLUP_OUTPUT)),
+};
+
 static iomux_v3_cfg_t const uart1_pads[] = {
-	IOMUX_PADS(PAD_CSI0_DAT10__UART1_TX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL)),
-	IOMUX_PADS(PAD_CSI0_DAT11__UART1_RX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL)),
+	IOMUX_PADS(PAD_SD3_DAT7__UART1_TX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL)),
+	IOMUX_PADS(PAD_SD3_DAT6__UART1_RX_DATA | MUX_PAD_CTRL(UART_PAD_CTRL)),
 };
 
 static iomux_v3_cfg_t const enet_pads[] = {
@@ -249,6 +272,12 @@ iomux_v3_cfg_t const di0_pads[] = {
 	IOMUX_PADS(PAD_DI0_PIN2__IPU1_DI0_PIN02),		/* DISP0_HSYNC */
 	IOMUX_PADS(PAD_DI0_PIN3__IPU1_DI0_PIN03),		/* DISP0_VSYNC */
 };
+
+static void setup_iomux_misc(void)
+{
+
+	SETUP_IOMUX_PADS(misc_pads);
+}
 
 static void setup_iomux_uart(void)
 {
@@ -621,6 +650,7 @@ int board_ehci_power(int port, int on)
 
 int board_early_init_f(void)
 {
+	setup_iomux_misc();
 	setup_iomux_uart();
 
 	return 0;

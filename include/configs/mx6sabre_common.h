@@ -69,7 +69,11 @@
 	"fdt_addr=0x18000000\0" \
 	"boot_fdt=try\0" \
 	"ethaddr=00:e0:0c:bc:e5:60\0" \
-	"ip_dyn=yes\0" \
+	"ip_dyn=no\0" \
+	"ipaddr=191.191.1.100\0" \
+	"serverip=191.191.1.200\0" \
+	"gatewayip=191.191.1.1\0" \
+	"netmask=255.255.255.0\0" \
 	"console=" CONSOLE_DEV "\0" \
 	"dfuspi=dfu 0 sf 0:0:10000000:0\0" \
 	"dfu_alt_info_spl=spl raw 0x400\0" \
@@ -119,9 +123,12 @@
 			"bootz; " \
 		"fi;\0" \
 	"netargs=setenv bootargs console=${console},${baudrate} " \
-		"root=/dev/nfs " \
-		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
+		"root=/dev/nfs rw " \
+		"ip=${ipaddr}:${serverip}:${gatewayip}:${netmask} nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
 	"netboot=echo Booting from net ...; " \
+		"setenv image skynet/${image}; " \
+		"setenv fdt_file skynet/${fdt_file}; " \
+		"setenv nfsroot /home/skynet/rootfs; " \
 		"run netargs; " \
 		"if test ${ip_dyn} = yes; then " \
 			"setenv get_cmd dhcp; " \
@@ -156,6 +163,8 @@
 					"setenv fdt_file imx6q-sabresd.dtb; fi; " \
 				"if test $board_name = SABRESD && test $board_rev = MX6DL; then " \
 					"setenv fdt_file imx6dl-sabresd.dtb; fi; " \
+				"if test $board_name = SKYNET && test $board_rev = MX6DL; then " \
+					"setenv fdt_file imx6dl-skynet.dtb; fi; " \
 				"if test $fdt_file = undefined; then " \
 					"echo WARNING: Could not determine dtb to use; fi; " \
 			"fi;\0" \

@@ -220,7 +220,7 @@ static struct clk ipu_clk = {
 };
 
 #if !defined CONFIG_SYS_LDB_CLOCK
-#define CONFIG_SYS_LDB_CLOCK 65000000
+#define CONFIG_SYS_LDB_CLOCK 40000000
 #endif
 
 static struct clk ldb_clk = {

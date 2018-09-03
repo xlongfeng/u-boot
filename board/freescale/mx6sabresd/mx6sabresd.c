@@ -85,6 +85,8 @@ int dram_init(void)
 }
 
 #define VDD5V_SW_CPU		IMX_GPIO_NR(2, 1)
+
+/* Power for G40E LCD Backlight and Module */
 #define VMAIN_IN_SW_CPU		IMX_GPIO_NR(2, 2)
 
 #define POWER_STATE_LED		IMX_GPIO_NR(3, 3)
@@ -438,7 +440,7 @@ struct display_info_t const displays[] = {{
 		.lower_margin   = 2,
 		.hsync_len      = 128,
 		.vsync_len      = 4,
-		.sync           = 0,
+		.sync           = FB_SYNC_EXT,
 		.vmode          = FB_VMODE_NONINTERLACED
 } }, {
 	.bus	= -1,
@@ -515,22 +517,34 @@ static void setup_display(void)
 	enable_ipu_clock();
 	imx_setup_hdmi();
 
+	/*
+	 * ipu1_pixel_clk_x clock tree:
+	 * osc_clk(24M)->pll2_528_bus_main_clk(528M)->
+	 * pll2_pfd_352M(280M)->ldb_dix_clk(40M)->
+	 * ipu1_di_clk_x(40M)->ipu1_pixel_clk_x(40M)
+	 */
+	writel(BM_ANADIG_PFD_528_PFD0_CLKGATE, &mxc_ccm->analog_pfd_528_set);
+	writel(BM_ANADIG_PFD_528_PFD0_FRAC, &mxc_ccm->analog_pfd_528_clr);
+	writel(BF_ANADIG_PFD_528_PFD0_FRAC(0x22), &mxc_ccm->analog_pfd_528_set);
+
 	/* Turn on LDB0, LDB1, IPU,IPU DI0 clocks */
 	reg = readl(&mxc_ccm->CCGR3);
 	reg |=  MXC_CCM_CCGR3_LDB_DI0_MASK | MXC_CCM_CCGR3_LDB_DI1_MASK;
 	writel(reg, &mxc_ccm->CCGR3);
 
-	/* set LDB0, LDB1 clk select to 011/011 */
+	/* set LDB0, LDB1 clk select to 001/001 */
 	reg = readl(&mxc_ccm->cs2cdr);
 	reg &= ~(MXC_CCM_CS2CDR_LDB_DI0_CLK_SEL_MASK
 		 | MXC_CCM_CS2CDR_LDB_DI1_CLK_SEL_MASK);
-	reg |= (3 << MXC_CCM_CS2CDR_LDB_DI0_CLK_SEL_OFFSET)
-	      | (3 << MXC_CCM_CS2CDR_LDB_DI1_CLK_SEL_OFFSET);
+	reg |= (1 << MXC_CCM_CS2CDR_LDB_DI0_CLK_SEL_OFFSET)
+	      | (1 << MXC_CCM_CS2CDR_LDB_DI1_CLK_SEL_OFFSET);
 	writel(reg, &mxc_ccm->cs2cdr);
 
 	reg = readl(&mxc_ccm->cscmr2);
 	reg |= MXC_CCM_CSCMR2_LDB_DI0_IPU_DIV | MXC_CCM_CSCMR2_LDB_DI1_IPU_DIV;
 	writel(reg, &mxc_ccm->cscmr2);
+
+	writel(BM_ANADIG_PFD_528_PFD0_CLKGATE, &mxc_ccm->analog_pfd_528_clr);
 
 	reg = readl(&mxc_ccm->chsccdr);
 	reg |= (CHSCCDR_CLK_SEL_LDB_DI0
@@ -546,15 +560,16 @@ static void setup_display(void)
 	     | IOMUXC_GPR2_DATA_WIDTH_CH1_18BIT
 	     | IOMUXC_GPR2_BIT_MAPPING_CH0_SPWG
 	     | IOMUXC_GPR2_DATA_WIDTH_CH0_18BIT
-	     | IOMUXC_GPR2_LVDS_CH0_MODE_DISABLED
-	     | IOMUXC_GPR2_LVDS_CH1_MODE_ENABLED_DI0;
+	     | IOMUXC_GPR2_LVDS_CH1_MODE_DISABLED
+	     | IOMUXC_GPR2_LVDS_CH0_MODE_ENABLED_DI0;
 	writel(reg, &iomux->gpr[2]);
 
 	reg = readl(&iomux->gpr[3]);
 	reg = (reg & ~(IOMUXC_GPR3_LVDS1_MUX_CTL_MASK
+			| IOMUXC_GPR3_LVDS0_MUX_CTL_MASK
 			| IOMUXC_GPR3_HDMI_MUX_CTL_MASK))
 	    | (IOMUXC_GPR3_MUX_SRC_IPU1_DI0
-	       << IOMUXC_GPR3_LVDS1_MUX_CTL_OFFSET);
+	       << IOMUXC_GPR3_LVDS0_MUX_CTL_OFFSET);
 	writel(reg, &iomux->gpr[3]);
 }
 #endif /* CONFIG_VIDEO_IPUV3 */
@@ -703,7 +718,7 @@ int board_late_init(void)
 
 int checkboard(void)
 {
-	puts("Board: MX6-SabreSD\n");
+	puts("Board: MX6-Skynet\n");
 	return 0;
 }
 

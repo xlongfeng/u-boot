@@ -221,15 +221,22 @@ static iomux_v3_cfg_t const bl_pads[] = {
 	IOMUX_PADS(PAD_EIM_DA9__GPIO3_IO09 | MUX_PAD_CTRL(NO_PAD_CTRL)),
 };
 
-static void enable_backlight(void)
+static void setup_backlight(void)
 {
 	SETUP_IOMUX_PADS(bl_pads);
+	gpio_direction_output(TPS61165_PWM, 0);
+	gpio_direction_output(TPS61165_CCFL_SW, 0);
+	gpio_direction_output(LED_BACLLIGHT_PWM, 0);
+	gpio_direction_output(LED_BACKLIGHT_EN, 0);
+}
 
-	gpio_direction_output(TPS61165_PWM, 1);
-	gpio_direction_output(TPS61165_CCFL_SW, 1);
+static void enable_backlight(void)
+{
+	gpio_direction_output(TPS61165_PWM, 0);
+	mdelay(3);
+	gpio_set_value(TPS61165_PWM, 1);
+	gpio_set_value(TPS61165_CCFL_SW, 1);
 
-	gpio_direction_output(LED_BACLLIGHT_PWM, 1);
-	gpio_direction_output(LED_BACKLIGHT_EN, 1);
 }
 
 static void enable_rgb(struct display_info_t const *dev)
@@ -660,6 +667,7 @@ int board_init(void)
 	else
 		setup_i2c(2, CONFIG_SYS_I2C_SPEED, 0x7f, &mx6dl_i2c_pad_info1);
 #if defined(CONFIG_VIDEO_IPUV3)
+	setup_backlight();
 	setup_display();
 #endif
 #ifdef CONFIG_USB_EHCI_MX6

@@ -31,6 +31,7 @@
 #include "../common/pfuze.h"
 #include <usb.h>
 #include <usb/ehci-ci.h>
+#include <pwm.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -214,16 +215,20 @@ static iomux_v3_cfg_t const rgb_pads[] = {
 #define LED_BACLLIGHT_PWM	IMX_GPIO_NR(1, 18)
 #define LED_BACKLIGHT_EN	IMX_GPIO_NR(3, 9)
 
-static iomux_v3_cfg_t const bl_pads[] = {
+static iomux_v3_cfg_t const bl_gpio_pads[] = {
 	IOMUX_PADS(PAD_SD1_DAT1__GPIO1_IO17 | MUX_PAD_CTRL(NO_PAD_CTRL)),
 	IOMUX_PADS(PAD_CSI0_DAT16__GPIO6_IO02 | MUX_PAD_CTRL(NO_PAD_CTRL)),
 	IOMUX_PADS(PAD_SD1_CMD__GPIO1_IO18 | MUX_PAD_CTRL(NO_PAD_CTRL)),
 	IOMUX_PADS(PAD_EIM_DA9__GPIO3_IO09 | MUX_PAD_CTRL(NO_PAD_CTRL)),
 };
 
+static iomux_v3_cfg_t const bl_pwm_pads[] = {
+	IOMUX_PADS(PAD_SD1_DAT1__PWM3_OUT | MUX_PAD_CTRL(NO_PAD_CTRL)),
+};
+
 static void setup_backlight(void)
 {
-	SETUP_IOMUX_PADS(bl_pads);
+	SETUP_IOMUX_PADS(bl_gpio_pads);
 	gpio_direction_output(TPS61165_PWM, 0);
 	gpio_direction_output(TPS61165_CCFL_SW, 0);
 	gpio_direction_output(LED_BACLLIGHT_PWM, 0);
@@ -232,11 +237,12 @@ static void setup_backlight(void)
 
 static void enable_backlight(void)
 {
-	gpio_direction_output(TPS61165_PWM, 0);
 	mdelay(3);
-	gpio_set_value(TPS61165_PWM, 1);
+	pwm_init(2, 0, 0);
+	pwm_config(2, 12000, 50000);
+	pwm_enable(2);
+	SETUP_IOMUX_PADS(bl_pwm_pads);
 	gpio_set_value(TPS61165_CCFL_SW, 1);
-
 }
 
 static void enable_rgb(struct display_info_t const *dev)
